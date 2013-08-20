@@ -36,6 +36,17 @@ public class GiftiWriter {
 	 * Constructor.
 	 * @param gifti the GIFTI object to write
 	 * @param file the file to write to
+	 */
+	public GiftiWriter(GIFTI gifti, File file) {
+		this(gifti, file, new float[]{0, 0, 0}, new float[]{1, 1, 1}, false);
+	}
+	
+	
+	
+	/**
+	 * Constructor.
+	 * @param gifti the GIFTI object to write
+	 * @param file the file to write to
 	 * @param offset offset to be applied to points (float[3])
 	 * @param scale scale to be applied to points (float[3])
 	 * @param lineBreaks true to allow line breaks when writing encoded binary data, false otherwise

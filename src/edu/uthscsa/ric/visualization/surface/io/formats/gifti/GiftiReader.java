@@ -72,6 +72,17 @@ public class GiftiReader extends DefaultHandler {
 	private final byte[] buffer = new byte[BUFFER_SIZE];
 
 
+	
+	
+	/**
+	 * Constructor.
+	 * @param file the file to read
+	 */
+	public GiftiReader(File file) {
+		this(file, new float[] {0, 0, 0}, new float[] {1, 1, 1});
+	}
+	
+	
 
 	/**
 	 * Constructor.
