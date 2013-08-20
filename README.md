@@ -1,7 +1,9 @@
 GIFTI-IO
 ========
 
-A GIFTI reader/writer implementation in Java.
+A GIFTI reader/writer implementation in Java.  Current list of features:
+- Supports reading ASCII, Base64Binary, GZipBase64Binary data (all datatypes, byte orders).
+- Supports writing GZipBase64Binary data (all datatypes, byte orders).
 
 
 Installation
@@ -103,7 +105,7 @@ gifti.addDataArray(trianglesData);
 
 
 // write it out
-GiftiWriter writer = new GiftiWriter(gifti, file, allowLineBreaksBox.isSelected());
+GiftiWriter writer = new GiftiWriter(gifti, file);
 
 try {
     writer.writeGiftiXML();
