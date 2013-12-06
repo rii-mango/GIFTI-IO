@@ -1,7 +1,7 @@
 GIFTI-IO
 ========
 
-A GIFTI reader/writer implementation in Java.  Current list of features:
+A [GIFTI](http://www.nitrc.org/projects/gifti/) reader/writer implementation in Java.  Current list of features:
 - Supports most features common to .surf.gii format, including the intent types: 
   * NIFTI_INTENT_POINTSET
   * NIFTI_INTENT_TRIANGLE
