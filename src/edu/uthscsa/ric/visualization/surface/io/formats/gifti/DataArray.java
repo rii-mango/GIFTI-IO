@@ -61,19 +61,21 @@ public class DataArray implements MetadataHolder {
 	/**
 	 * @param attributes
 	 */
-	public DataArray(Map<String, String> attributes) {
+	public DataArray(Map<String, String> attributes, boolean headerOnly) {
 		this.attributes = attributes;
 		this.metadata = new HashMap<String, String>();
 		this.transforms = new Vector<GiftiTransform>();
 
-		if (isFloat32()) {
-			buffer = ByteBuffer.allocateDirect(getNumElements() * 4 * 3);
-			buffer.order(ByteOrder.nativeOrder());
-		} else if (isInt32()) {
-			buffer = ByteBuffer.allocateDirect(getNumElements() * 4 * 3);
-			buffer.order(ByteOrder.nativeOrder());
-		} else if (isUnsignedInt8()) {
-			buffer = ByteBuffer.allocateDirect(getNumElements() * 3);
+		if (!headerOnly) {
+			if (isFloat32()) {
+				buffer = ByteBuffer.allocateDirect(getNumElements() * 4 * 3);
+				buffer.order(ByteOrder.nativeOrder());
+			} else if (isInt32()) {
+				buffer = ByteBuffer.allocateDirect(getNumElements() * 4 * 3);
+				buffer.order(ByteOrder.nativeOrder());
+			} else if (isUnsignedInt8()) {
+				buffer = ByteBuffer.allocateDirect(getNumElements() * 3);
+			}
 		}
 	}
 
@@ -385,8 +387,12 @@ public class DataArray implements MetadataHolder {
 	 * @return
 	 */
 	public FloatBuffer getAsPointsBuffer() {
-		buffer.rewind();
-		return buffer.asFloatBuffer();
+		if (buffer != null) {
+			buffer.rewind();
+			return buffer.asFloatBuffer();
+		}
+		
+		return null;
 	}
 
 
@@ -395,8 +401,12 @@ public class DataArray implements MetadataHolder {
 	 * @return
 	 */
 	public FloatBuffer getAsNormalsBuffer() {
-		buffer.rewind();
-		return buffer.asFloatBuffer();
+		if (buffer != null) {
+			buffer.rewind();
+			return buffer.asFloatBuffer();	
+		}
+		
+		return null;
 	}
 
 
@@ -405,8 +415,12 @@ public class DataArray implements MetadataHolder {
 	 * @return
 	 */
 	public IntBuffer getAsIndicesBuffer() {
-		buffer.rewind();
-		return buffer.asIntBuffer();
+		if (buffer != null) {
+			buffer.rewind();
+			return buffer.asIntBuffer();	
+		}
+		
+		return null;
 	}
 
 

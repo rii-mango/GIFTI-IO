@@ -157,7 +157,7 @@ public class GiftiReader extends DefaultHandler {
 		if (qName.equalsIgnoreCase(TAG_GIFTI)) {
 			currentMetadataHolder = gifti = new GIFTI(GiftiUtils.attributesToMap(attributes));
 		} else if (qName.equalsIgnoreCase(TAG_DATAARRAY)) {
-			currentMetadataHolder = currentDataArray = new DataArray(GiftiUtils.attributesToMap(attributes));
+			currentMetadataHolder = currentDataArray = new DataArray(GiftiUtils.attributesToMap(attributes), headerOnly);
 			gifti.addDataArray(currentDataArray);
 		} else if (qName.equalsIgnoreCase(TAG_METADATA)) {
 			metadata = new HashMap<String, String>();
