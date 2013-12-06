@@ -100,6 +100,24 @@ public class GIFTI implements MetadataHolder {
 	}
 
 
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public int getNumPoints() {
+		Iterator<DataArray> it = dataArrays.iterator();
+		while (it.hasNext()) {
+			DataArray dataArray = it.next();
+			if (dataArray.isPoints()) {
+				return dataArray.getNumElements();
+			}
+		}
+
+		return 0;
+	}
+	
+	
 
 	/**
 	 * @return
@@ -134,6 +152,24 @@ public class GIFTI implements MetadataHolder {
 	}
 
 
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public int getNumTriangles() {
+		Iterator<DataArray> it = dataArrays.iterator();
+		while (it.hasNext()) {
+			DataArray dataArray = it.next();
+			if (dataArray.isTriangles()) {
+				return dataArray.getNumElements() / 3;
+			}
+		}
+
+		return 0;
+	}
+	
+	
 
 	/**
 	 * @return

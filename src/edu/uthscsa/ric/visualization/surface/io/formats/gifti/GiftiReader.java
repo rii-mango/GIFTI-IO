@@ -53,6 +53,7 @@ public class GiftiReader extends DefaultHandler {
 	private boolean isReadingXform;
 	private boolean isReadingTransformedSpace;
 	private boolean isReadingDataSpace;
+	private boolean headerOnly;
 
 	public static final String TAG_COORDINATESYSTEMTRANSFORMMATRIX = "CoordinateSystemTransformMatrix";
 	public static final String TAG_DATA = "Data";
@@ -106,6 +107,19 @@ public class GiftiReader extends DefaultHandler {
 	 * @throws GiftiFormatException
 	 */
 	public GIFTI parseGiftiXML() throws GiftiFormatException {
+		return parseGiftiXML(false);
+	}
+
+	
+
+	/**
+	 * 
+	 * @param headerOnly
+	 * @return
+	 * @throws GiftiFormatException
+	 */
+	public GIFTI parseGiftiXML(boolean headerOnly) throws GiftiFormatException {
+		this.headerOnly = headerOnly;
 		SAXParserFactory factory = SAXParserFactory.newInstance();
 		factory.setValidating(false);
 
@@ -132,9 +146,9 @@ public class GiftiReader extends DefaultHandler {
 
 		return gifti;
 	}
+	
 
-
-
+	
 	/**
 	 * @see org.xml.sax.helpers.DefaultHandler#startElement(java.lang.String, java.lang.String, java.lang.String, org.xml.sax.Attributes)
 	 */
@@ -195,62 +209,64 @@ public class GiftiReader extends DefaultHandler {
 		} else if (isReadingDataSpace) {
 			currentString.append(ch, start, length);
 		} else if (isReadingData) {
-			if (currentDataArray.isAscii()) {
-				currentString.append(ch, start, length);
+			if (!headerOnly) {
+				if (currentDataArray.isAscii()) {
+					currentString.append(ch, start, length);
 
-				int spaceIndex = currentString.lastIndexOf(" ");
-				int tabIndex = currentString.lastIndexOf("\t");
-				int newlineIndex = currentString.lastIndexOf("\n");
+					int spaceIndex = currentString.lastIndexOf(" ");
+					int tabIndex = currentString.lastIndexOf("\t");
+					int newlineIndex = currentString.lastIndexOf("\n");
 
-				int index = spaceIndex;
+					int index = spaceIndex;
 
-				if (tabIndex > index) {
-					index = tabIndex;
-				}
-
-				if (newlineIndex > index) {
-					index = newlineIndex;
-				}
-
-				String string = currentString.substring(0, index);
-				currentString.delete(0, index);
-
-				if (currentDataArray.isPoints() || currentDataArray.isNormals()) {
-					handleAsciiPointData(string);
-				} else if (currentDataArray.isTriangles()) {
-					handleAsciiIndicesData(string);
-				}
-			} else {
-				String str = new String(ch, start, length);
-				str = str.replaceAll("\\s", "");
-
-				currentString.append(str);
-
-				int actualLength = currentString.length();
-				int validLength = (actualLength / 4) * 4;
-
-				String string = null;
-
-				if (actualLength != validLength) { // base64 encoded string must be multiple of 4
-					string = currentString.substring(0, validLength);
-					currentString.delete(0, validLength);
-				} else {
-					string = currentString.toString();
-					currentString.delete(0, actualLength);
-				}
-
-				try {
-					if (currentDataArray.isPoints() || currentDataArray.isNormals()) {
-						handleBinaryPointData(string.getBytes("UTF-8"));
-					} else if (currentDataArray.isTriangles()) {
-						handleBinaryIndicesData(string.getBytes("UTF-8"));
+					if (tabIndex > index) {
+						index = tabIndex;
 					}
-				} catch (UnsupportedEncodingException ex) {
-					throw new SAXException(ex);
-				} catch (DataFormatException ex) {
-					throw new SAXException(ex);
-				} catch (GiftiFormatException ex) {
-					throw new SAXException(ex);
+
+					if (newlineIndex > index) {
+						index = newlineIndex;
+					}
+
+					String string = currentString.substring(0, index);
+					currentString.delete(0, index);
+
+					if (currentDataArray.isPoints() || currentDataArray.isNormals()) {
+						handleAsciiPointData(string);
+					} else if (currentDataArray.isTriangles()) {
+						handleAsciiIndicesData(string);
+					}
+				} else {
+					String str = new String(ch, start, length);
+					str = str.replaceAll("\\s", "");
+
+					currentString.append(str);
+
+					int actualLength = currentString.length();
+					int validLength = (actualLength / 4) * 4;
+
+					String string = null;
+
+					if (actualLength != validLength) { // base64 encoded string must be multiple of 4
+						string = currentString.substring(0, validLength);
+						currentString.delete(0, validLength);
+					} else {
+						string = currentString.toString();
+						currentString.delete(0, actualLength);
+					}
+
+					try {
+						if (currentDataArray.isPoints() || currentDataArray.isNormals()) {
+							handleBinaryPointData(string.getBytes("UTF-8"));
+						} else if (currentDataArray.isTriangles()) {
+							handleBinaryIndicesData(string.getBytes("UTF-8"));
+						}
+					} catch (UnsupportedEncodingException ex) {
+						throw new SAXException(ex);
+					} catch (DataFormatException ex) {
+						throw new SAXException(ex);
+					} catch (GiftiFormatException ex) {
+						throw new SAXException(ex);
+					}
 				}
 			}
 		}
@@ -263,7 +279,11 @@ public class GiftiReader extends DefaultHandler {
 	 */
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException {
-		if (qName.equalsIgnoreCase(TAG_GIFTI)) {} else if (qName.equalsIgnoreCase(TAG_DATAARRAY)) {} else if (qName.equalsIgnoreCase(TAG_METADATA)) {
+		if (qName.equalsIgnoreCase(TAG_GIFTI)) {
+			
+		} else if (qName.equalsIgnoreCase(TAG_DATAARRAY)) {
+			
+		} else if (qName.equalsIgnoreCase(TAG_METADATA)) {
 			currentMetadataHolder.addMetadata(metadata);
 		} else if (qName.equalsIgnoreCase(TAG_MD)) {
 			metadata.put(currentMD.name, currentMD.value);
