@@ -7,3 +7,5 @@
 /bin
 /lib
 /build
+deploy.xml
+depends.xml

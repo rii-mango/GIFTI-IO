@@ -1,4 +1,5 @@
-<project name="buildGIFTI-IO" basedir="." default="all">
+
+<project name="build" basedir="." default="all">
 	
 	<property name="src.dir"     	value="src" />
     <property name="build.dir"   	value="build" />
