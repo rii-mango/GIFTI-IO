@@ -17,8 +17,13 @@
 	</path>
 			
 	
-	
-	<target name="clean">
+	<target name="init">
+		<echo>Java version = ${java.version}</echo>
+		<echo>Ant version = ${ant.version}</echo>	    	
+	</target>
+			
+			
+	<target name="clean" depends="init">
     	<delete dir="${classes.dir}" />
 		<mkdir dir="${classes.dir}" />
 		
