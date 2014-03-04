@@ -5,16 +5,12 @@
     <property name="build.dir"   	value="build" />
     <property name="classes.dir" 	value="bin" />
     <property name="lib.dir" 		value="lib" />   
-	<property name="docs.dir"		value="docs" />
 
+	
+	<!-- dependencies -->
 	<fileset dir="${lib.dir}" id="dependencies">
 		<include name="*.jar"/>
 	</fileset>
-
-	
-	<path id="classpath">
-		<fileset refid="dependencies" />
-	</path>
 			
 	
 	<target name="init">
@@ -25,15 +21,17 @@
 			
 	<target name="clean" depends="init">
     	<delete dir="${classes.dir}" />
-		<mkdir dir="${classes.dir}" />
-		
     	<delete dir="${build.dir}" />
+		<mkdir dir="${classes.dir}" />
     	<mkdir dir="${build.dir}" />
 	</target>
 		
 			
-			
 	<target name="compile" depends="clean">
+		<path id="classpath">
+			<fileset refid="dependencies" />
+		</path>
+		
     	<javac includeantruntime="false" srcdir="${src.dir}" destdir="${classes.dir}" source="1.6" target="1.6" debug="on" deprecation="on" 
     		debuglevel="lines,vars,source">
 			<classpath refid="classpath"/>
@@ -41,14 +39,13 @@
 	</target>
 	
 	
-	
 	<target name="jar" depends="compile">
 		<jar destfile="${build.dir}/gifti-io.jar" basedir="${classes.dir}" />
 	</target>
 
 
-
 	<target name="all" depends="jar">
 		<echo>Done!</echo>
 	</target>
+	
 </project>
