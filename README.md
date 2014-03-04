@@ -17,8 +17,7 @@ TODO:
 
 Installation
 ------
-1. Requires [Apache Commons Codec] (http://commons.apache.org/proper/commons-codec/): [(download)](http://mirror.sdunix.com/apache//commons/codec/binaries/commons-codec-1.8-bin.zip).  Copy to `lib` directory.
-2. Run `build.xml` to produce `build/gifti-io.jar`.
+Run `build.xml` to produce `build/gifti-io.jar`.
 
 
 Usage (Reader)
