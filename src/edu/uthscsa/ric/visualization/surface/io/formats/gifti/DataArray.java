@@ -192,7 +192,7 @@ public class DataArray implements MetadataHolder {
 	/**
 	 * @return
 	 */
-	public boolean isFloat32() {
+	public final boolean isFloat32() {
 		return TYPE_NIFTI_TYPE_FLOAT32.equals(attributes.get(ATT_DATATYPE));
 	}
 
@@ -201,7 +201,7 @@ public class DataArray implements MetadataHolder {
 	/**
 	 * @return
 	 */
-	public boolean isInt32() {
+	public final boolean isInt32() {
 		return TYPE_NIFTI_TYPE_INT32.equals(attributes.get(ATT_DATATYPE));
 	}
 
@@ -210,7 +210,7 @@ public class DataArray implements MetadataHolder {
 	/**
 	 * @return
 	 */
-	public boolean isUnsignedInt8() {
+	public final boolean isUnsignedInt8() {
 		return TYPE_NIFTI_TYPE_UINT8.equals(attributes.get(ATT_DATATYPE));
 	}
 
@@ -278,7 +278,7 @@ public class DataArray implements MetadataHolder {
 	/**
 	 * @return
 	 */
-	public int getNumElements() {
+	public final int getNumElements() {
 		return getNumElements(0);
 	}
 
@@ -391,7 +391,7 @@ public class DataArray implements MetadataHolder {
 			buffer.rewind();
 			return buffer.asFloatBuffer();
 		}
-		
+
 		return null;
 	}
 
@@ -403,9 +403,9 @@ public class DataArray implements MetadataHolder {
 	public FloatBuffer getAsNormalsBuffer() {
 		if (buffer != null) {
 			buffer.rewind();
-			return buffer.asFloatBuffer();	
+			return buffer.asFloatBuffer();
 		}
-		
+
 		return null;
 	}
 
@@ -417,9 +417,9 @@ public class DataArray implements MetadataHolder {
 	public IntBuffer getAsIndicesBuffer() {
 		if (buffer != null) {
 			buffer.rewind();
-			return buffer.asIntBuffer();	
+			return buffer.asIntBuffer();
 		}
-		
+
 		return null;
 	}
 
