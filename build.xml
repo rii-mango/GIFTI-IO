@@ -14,8 +14,9 @@
 			
 	
 	<target name="init">
-		<echo>Java version = ${java.version}</echo>
-		<echo>Ant version = ${ant.version}</echo>	    	
+		<echo>Java ${java.version}</echo>
+		<echo>${ant.version}</echo> 
+		<echo>${os.name} ${os.version} ${os.arch}</echo>  	
 	</target>
 			
 			
