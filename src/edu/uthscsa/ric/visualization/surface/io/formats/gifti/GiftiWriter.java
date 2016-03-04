@@ -34,24 +34,26 @@ public class GiftiWriter {
 
 	/**
 	 * Constructor.
+	 * 
 	 * @param gifti the GIFTI object to write
 	 * @param file the file to write to
 	 */
-	public GiftiWriter(GIFTI gifti, File file) {
-		this(gifti, file, new float[]{0, 0, 0}, new float[]{1, 1, 1}, false);
+	public GiftiWriter(final GIFTI gifti, final File file) {
+		this(gifti, file, new float[] { 0, 0, 0 }, new float[] { 1, 1, 1 }, false);
 	}
-	
-	
-	
+
+
+
 	/**
 	 * Constructor.
+	 * 
 	 * @param gifti the GIFTI object to write
 	 * @param file the file to write to
 	 * @param offset offset to be applied to points (float[3])
 	 * @param scale scale to be applied to points (float[3])
 	 * @param lineBreaks true to allow line breaks when writing encoded binary data, false otherwise
 	 */
-	public GiftiWriter(GIFTI gifti, File file, float[] offset, float[] scale, boolean lineBreaks) {
+	public GiftiWriter(final GIFTI gifti, final File file, final float[] offset, final float[] scale, final boolean lineBreaks) {
 		this.gifti = gifti;
 		this.file = file;
 		this.offset = offset;
@@ -63,6 +65,7 @@ public class GiftiWriter {
 
 	/**
 	 * Write the file.
+	 * 
 	 * @throws GiftiFormatException
 	 */
 	public void writeGiftiXML() throws GiftiFormatException {
@@ -71,7 +74,7 @@ public class GiftiWriter {
 
 			os = new FileOutputStream(file);
 
-			XMLStreamWriter out = XMLOutputFactory.newInstance().createXMLStreamWriter(new OutputStreamWriter(os, "UTF-8"));
+			final XMLStreamWriter out = XMLOutputFactory.newInstance().createXMLStreamWriter(new OutputStreamWriter(os, "UTF-8"));
 			writeStartDocument(out);
 			writeDTD(out, GIFTI.DOC_TYPE);
 
@@ -82,18 +85,18 @@ public class GiftiWriter {
 			writeEmptyElement(out, GiftiReader.TAG_LABELTABLE);
 
 			if (gifti.getNumDataArrays() > 0) {
-				Iterator<DataArray> it = gifti.getDataArrays().iterator();
+				final Iterator<DataArray> it = gifti.getDataArrays().iterator();
 				while (it.hasNext()) {
-					DataArray da = it.next();
+					final DataArray da = it.next();
 					writeStartElement(out, GiftiReader.TAG_DATAARRAY, da.getAttributes(), false);
 					writeMetadata(out, da.getMetadata());
 
-					Vector<GiftiTransform> xforms = da.getTransforms();
+					final Vector<GiftiTransform> xforms = da.getTransforms();
 
 					if ((xforms != null) && (xforms.size() > 0)) {
-						Iterator<GiftiTransform> itx = xforms.iterator();
+						final Iterator<GiftiTransform> itx = xforms.iterator();
 						while (itx.hasNext()) {
-							GiftiTransform xform = itx.next();
+							final GiftiTransform xform = itx.next();
 							writeStartElement(out, GiftiReader.TAG_COORDINATESYSTEMTRANSFORMMATRIX, null, false);
 
 							writeStartElement(out, GiftiReader.TAG_DATASPACE, null, true);
@@ -124,30 +127,31 @@ public class GiftiWriter {
 
 			out.writeEndDocument();
 			out.close();
-		} catch (FileNotFoundException ex) {
+		} catch (final FileNotFoundException ex) {
 			throw new GiftiFormatException(ex);
-		} catch (UnsupportedEncodingException ex) {
+		} catch (final UnsupportedEncodingException ex) {
 			throw new GiftiFormatException(ex);
-		} catch (XMLStreamException ex) {
+		} catch (final XMLStreamException ex) {
 			throw new GiftiFormatException(ex);
-		} catch (FactoryConfigurationError ex) {
+		} catch (final FactoryConfigurationError ex) {
 			throw new GiftiFormatException(ex);
 		} finally {
 			try {
 				os.close();
-			} catch (Exception ex) {}
+			} catch (final Exception ex) {}
 		}
 	}
 
 
 
-	private void writeStartElement(XMLStreamWriter out, String tag, boolean containsData) throws XMLStreamException {
+	private void writeStartElement(final XMLStreamWriter out, final String tag, final boolean containsData) throws XMLStreamException {
 		writeStartElement(out, tag, null, containsData);
 	}
 
 
 
-	private void writeStartElement(XMLStreamWriter out, String tag, Map<String, String> atts, boolean containsData) throws XMLStreamException {
+	private void writeStartElement(final XMLStreamWriter out, final String tag, final Map<String, String> atts, final boolean containsData)
+			throws XMLStreamException {
 		for (int x = 0; x < level; x++) {
 			out.writeCharacters(INDENT);
 		}
@@ -155,10 +159,10 @@ public class GiftiWriter {
 		out.writeStartElement(tag);
 
 		if ((atts != null) && (atts.size() > 0)) {
-			Iterator<String> it = atts.keySet().iterator();
+			final Iterator<String> it = atts.keySet().iterator();
 			while (it.hasNext()) {
-				String name = it.next();
-				String value = atts.get(name);
+				final String name = it.next();
+				final String value = atts.get(name);
 
 				out.writeAttribute(name, value);
 			}
@@ -173,7 +177,7 @@ public class GiftiWriter {
 
 
 
-	private void writeEndElement(XMLStreamWriter out, boolean containsData) throws XMLStreamException {
+	private void writeEndElement(final XMLStreamWriter out, final boolean containsData) throws XMLStreamException {
 		level--;
 
 		if (!containsData) {
@@ -188,40 +192,40 @@ public class GiftiWriter {
 
 
 
-	private void writeStartDocument(XMLStreamWriter out) throws XMLStreamException {
+	private void writeStartDocument(final XMLStreamWriter out) throws XMLStreamException {
 		out.writeStartDocument();
 		out.writeCharacters("\n");
 	}
 
 
 
-	private void writeCData(XMLStreamWriter out, String str) throws XMLStreamException {
+	private void writeCData(final XMLStreamWriter out, final String str) throws XMLStreamException {
 		out.writeCData(str);
 	}
 
 
 
-	private void writeCharacters(XMLStreamWriter out, String str) throws XMLStreamException {
+	private void writeCharacters(final XMLStreamWriter out, final String str) throws XMLStreamException {
 		out.writeCharacters(str);
 	}
 
 
 
-	private void writeDTD(XMLStreamWriter out, String dtd) throws XMLStreamException {
+	private void writeDTD(final XMLStreamWriter out, final String dtd) throws XMLStreamException {
 		out.writeDTD(dtd);
 		out.writeCharacters("\n");
 	}
 
 
 
-	private void writeMetadata(XMLStreamWriter out, Map<String, String> metadata) throws XMLStreamException {
+	private void writeMetadata(final XMLStreamWriter out, final Map<String, String> metadata) throws XMLStreamException {
 		if ((metadata != null) && (metadata.size() > 0)) {
 			writeStartElement(out, GiftiReader.TAG_METADATA, false);
 
-			Iterator<String> it = metadata.keySet().iterator();
+			final Iterator<String> it = metadata.keySet().iterator();
 			while (it.hasNext()) {
-				String name = it.next();
-				String value = metadata.get(name);
+				final String name = it.next();
+				final String value = metadata.get(name);
 
 				writeStartElement(out, GiftiReader.TAG_MD, false);
 
@@ -242,7 +246,7 @@ public class GiftiWriter {
 
 
 
-	private void writeEmptyElement(XMLStreamWriter out, String str) throws XMLStreamException {
+	private void writeEmptyElement(final XMLStreamWriter out, final String str) throws XMLStreamException {
 		for (int x = 0; x < level; x++) {
 			out.writeCharacters(INDENT);
 		}
@@ -253,22 +257,22 @@ public class GiftiWriter {
 
 
 
-	private void writeData(XMLStreamWriter out, DataArray dataArray) throws XMLStreamException, UnsupportedEncodingException {
-		GiftiWriterDataHandler it = new GiftiWriterDataHandler(dataArray, offset, scale);
-		Deflater deflater = new Deflater();
+	private void writeData(final XMLStreamWriter out, final DataArray dataArray) throws XMLStreamException, UnsupportedEncodingException {
+		final GiftiWriterDataHandler it = new GiftiWriterDataHandler(dataArray, offset, scale);
+		final Deflater deflater = new Deflater();
 		int leftover = 0;
 		int bufferMark = 0;
 		String currentString = "";
 
-		int numValues = dataArray.getNumValues();
+		final int numValues = dataArray.getNumValues();
 		int valueCt = 0;
 
-		byte[] deflatedBuffer = new byte[BUFFER_SIZE];
+		final byte[] deflatedBuffer = new byte[BUFFER_SIZE];
 
 		while (it.hasNext()) {
-			int dataValue = it.next();
+			final int dataValue = it.next();
 			valueCt++;
-			boolean lastValue = (valueCt == numValues);
+			final boolean lastValue = (valueCt == numValues);
 
 			if (dataArray.isLittleEndian()) {
 				buffer[bufferMark++] = (byte) ((dataValue >> 0) & 0xFF);
@@ -290,13 +294,13 @@ public class GiftiWriter {
 				}
 
 				while ((!lastValue && !deflater.needsInput()) || (lastValue && !deflater.finished())) {
-					int numBytesDeflated = deflater.deflate(deflatedBuffer, leftover, deflatedBuffer.length - leftover) + leftover;
+					final int numBytesDeflated = deflater.deflate(deflatedBuffer, leftover, deflatedBuffer.length - leftover) + leftover;
 
 					if (numBytesDeflated > 0) {
-						int numValid = (numBytesDeflated / 3) * 3;
+						final int numValid = (numBytesDeflated / 3) * 3;
 						leftover = numBytesDeflated % 3;
 
-						byte[] encoded = GiftiUtils.encode(deflatedBuffer, 0, numValid);
+						final byte[] encoded = GiftiUtils.encode(deflatedBuffer, 0, numValid);
 
 						if (lineBreaks) {
 							currentString = (currentString + new String(encoded, "UTF-8"));
@@ -324,13 +328,13 @@ public class GiftiWriter {
 			deflater.finish();
 
 			while (!deflater.finished()) {
-				int numBytesDeflated = deflater.deflate(deflatedBuffer, leftover, deflatedBuffer.length - leftover) + leftover;
+				final int numBytesDeflated = deflater.deflate(deflatedBuffer, leftover, deflatedBuffer.length - leftover) + leftover;
 
 				if (numBytesDeflated > 0) {
-					int numValid = (numBytesDeflated / 3) * 3;
+					final int numValid = (numBytesDeflated / 3) * 3;
 					leftover = numBytesDeflated % 3;
 
-					byte[] encoded = GiftiUtils.encode(deflatedBuffer, 0, numValid);
+					final byte[] encoded = GiftiUtils.encode(deflatedBuffer, 0, numValid);
 
 					if (lineBreaks) {
 						currentString = (currentString + new String(encoded, "UTF-8"));
@@ -350,7 +354,7 @@ public class GiftiWriter {
 			}
 
 			if (leftover > 0) {
-				byte[] encoded = GiftiUtils.encode(deflatedBuffer, 0, leftover);
+				final byte[] encoded = GiftiUtils.encode(deflatedBuffer, 0, leftover);
 
 				if (lineBreaks) {
 					currentString = (currentString + new String(encoded, "UTF-8"));

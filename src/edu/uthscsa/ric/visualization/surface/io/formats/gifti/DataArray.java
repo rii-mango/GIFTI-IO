@@ -61,10 +61,10 @@ public class DataArray implements MetadataHolder {
 	/**
 	 * @param attributes
 	 */
-	public DataArray(Map<String, String> attributes, boolean headerOnly) {
+	public DataArray(final Map<String, String> attributes, final boolean headerOnly) {
 		this.attributes = attributes;
-		this.metadata = new HashMap<String, String>();
-		this.transforms = new Vector<GiftiTransform>();
+		metadata = new HashMap<String, String>();
+		transforms = new Vector<GiftiTransform>();
 
 		if (!headerOnly) {
 			if (isFloat32()) {
@@ -85,11 +85,11 @@ public class DataArray implements MetadataHolder {
 	 * @param attributes
 	 * @param floatIterator
 	 */
-	public DataArray(Map<String, String> attributes, FloatBuffer buffer) {
+	public DataArray(final Map<String, String> attributes, final FloatBuffer buffer) {
 		this.attributes = attributes;
-		this.metadata = new HashMap<String, String>();
-		this.transforms = new Vector<GiftiTransform>();
-		this.floatBuffer = buffer;
+		metadata = new HashMap<String, String>();
+		transforms = new Vector<GiftiTransform>();
+		floatBuffer = buffer;
 	}
 
 
@@ -98,11 +98,11 @@ public class DataArray implements MetadataHolder {
 	 * @param attributes
 	 * @param indexIterator
 	 */
-	public DataArray(Map<String, String> attributes, IntBuffer buffer) {
+	public DataArray(final Map<String, String> attributes, final IntBuffer buffer) {
 		this.attributes = attributes;
-		this.metadata = new HashMap<String, String>();
-		this.transforms = new Vector<GiftiTransform>();
-		this.intBuffer = buffer;
+		metadata = new HashMap<String, String>();
+		transforms = new Vector<GiftiTransform>();
+		intBuffer = buffer;
 	}
 
 
@@ -111,7 +111,7 @@ public class DataArray implements MetadataHolder {
 	 * @see edu.uthscsa.ric.visualization.surface.io.formats.gifti.MetadataHolder#addMetadata(java.util.Map)
 	 */
 	@Override
-	public void addMetadata(Map<String, String> metadata) {
+	public void addMetadata(final Map<String, String> metadata) {
 		this.metadata.putAll(metadata);
 	}
 
@@ -120,7 +120,7 @@ public class DataArray implements MetadataHolder {
 	/**
 	 * @param xform
 	 */
-	public void addTransform(GiftiTransform xform) {
+	public void addTransform(final GiftiTransform xform) {
 		transforms.add(xform);
 	}
 
@@ -192,6 +192,24 @@ public class DataArray implements MetadataHolder {
 	/**
 	 * @return
 	 */
+	public boolean isRGB() {
+		return NIFTI_INTENT_RGB_VECTOR.equals(attributes.get(ATT_INTENT));
+	}
+
+
+
+	/**
+	 * @return
+	 */
+	public boolean isRGBA() {
+		return NIFTI_INTENT_RGBA_VECTOR.equals(attributes.get(ATT_INTENT));
+	}
+
+
+
+	/**
+	 * @return
+	 */
 	public boolean isFloat32() {
 		return TYPE_NIFTI_TYPE_FLOAT32.equals(attributes.get(ATT_DATATYPE));
 	}
@@ -223,7 +241,7 @@ public class DataArray implements MetadataHolder {
 		int dims = 0;
 		try {
 			dims = Integer.parseInt(attributes.get(ATT_DIMENSIONALITY));
-		} catch (NumberFormatException ex) {}
+		} catch (final NumberFormatException ex) {}
 		return dims;
 	}
 
@@ -288,11 +306,11 @@ public class DataArray implements MetadataHolder {
 	 * @param dim
 	 * @return
 	 */
-	public int getNumElements(int dim) {
+	public int getNumElements(final int dim) {
 		int num = 0;
 		try {
 			num = Integer.parseInt(attributes.get(ATT_DIMN + dim));
-		} catch (NumberFormatException ex) {}
+		} catch (final NumberFormatException ex) {}
 		return num;
 	}
 
@@ -359,7 +377,7 @@ public class DataArray implements MetadataHolder {
 		int num = 0;
 		try {
 			num = Integer.parseInt(attributes.get(ATT_EXTERNALFILEOFFSET));
-		} catch (NumberFormatException ex) {}
+		} catch (final NumberFormatException ex) {}
 		return num;
 	}
 
@@ -391,7 +409,7 @@ public class DataArray implements MetadataHolder {
 			buffer.rewind();
 			return buffer.asFloatBuffer();
 		}
-		
+
 		return null;
 	}
 
@@ -403,9 +421,9 @@ public class DataArray implements MetadataHolder {
 	public FloatBuffer getAsNormalsBuffer() {
 		if (buffer != null) {
 			buffer.rewind();
-			return buffer.asFloatBuffer();	
+			return buffer.asFloatBuffer();
 		}
-		
+
 		return null;
 	}
 
@@ -417,9 +435,9 @@ public class DataArray implements MetadataHolder {
 	public IntBuffer getAsIndicesBuffer() {
 		if (buffer != null) {
 			buffer.rewind();
-			return buffer.asIntBuffer();	
+			return buffer.asIntBuffer();
 		}
-		
+
 		return null;
 	}
 

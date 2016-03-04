@@ -11,7 +11,9 @@ public class GiftiWriterDataHandler {
 	private final IntBuffer intBuffer;
 	private final float[] offset;
 	private final float[] scale;
-	private final boolean isIndex, isNormals;
+	private final boolean isIndex;
+	private final boolean isNormals;
+	private final boolean isRGB;
 	private int index, compIndex;
 	private int capacity;
 
@@ -22,13 +24,14 @@ public class GiftiWriterDataHandler {
 	 * @param offset
 	 * @param scale
 	 */
-	public GiftiWriterDataHandler(DataArray dataArray, float[] offset, float[] scale) {
-		this.floatBuffer = dataArray.getFloatBuffer();
-		this.intBuffer = dataArray.getIntBuffer();
+	public GiftiWriterDataHandler(final DataArray dataArray, final float[] offset, final float[] scale) {
+		floatBuffer = dataArray.getFloatBuffer();
+		intBuffer = dataArray.getIntBuffer();
 		this.offset = offset;
 		this.scale = scale;
 		isIndex = (intBuffer != null);
 		isNormals = dataArray.isNormals();
+		isRGB = dataArray.isRGB() || dataArray.isRGBA();
 
 		if (isIndex) {
 			capacity = intBuffer.capacity();
@@ -66,6 +69,13 @@ public class GiftiWriterDataHandler {
 			} else if (compIndex == 2) {
 				val = (scale[2] * val);
 			}
+
+			compIndex++;
+			compIndex %= 3;
+
+			return Float.floatToIntBits(val);
+		} else if (isRGB) {
+			final float val = floatBuffer.get(index++);
 
 			compIndex++;
 			compIndex %= 3;
