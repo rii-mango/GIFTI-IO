@@ -98,12 +98,12 @@ public class GiftiUtils {
 	 * @return
 	 */
 	public static int swapInt(byte[] b, int i) {
-		return Integer.reverseBytes(bytes_to_int(b, i));
+		return Integer.reverseBytes(bytesToInt(b, i));
 	}
 
 
 
-	private static int bytes_to_int(byte[] b, int i) {
+	private static int bytesToInt(byte[] b, int i) {
 		return ((((b[i + 3]) & 0xff) << 0) | (((b[i + 2]) & 0xff) << 8) | (((b[i + 1]) & 0xff) << 16) | (((b[i + 0]) & 0xff) << 24));
 	}
 
@@ -115,7 +115,7 @@ public class GiftiUtils {
 	 * @return
 	 */
 	public static int getInt(byte[] b, int i) {
-		return bytes_to_int(b, i);
+		return bytesToInt(b, i);
 	}
 
 
@@ -137,13 +137,13 @@ public class GiftiUtils {
 	 * @return
 	 */
 	public static float getFloat(byte[] b, int i) {
-		return bytes_to_float(b, i);
+		return bytesToFloat(b, i);
 	}
 
 
 
-	private static float bytes_to_float(byte b[], int i) {
-		return Float.intBitsToFloat(bytes_to_int(b, i));
+	private static float bytesToFloat(byte b[], int i) {
+		return Float.intBitsToFloat(bytesToInt(b, i));
 	}
 
 
