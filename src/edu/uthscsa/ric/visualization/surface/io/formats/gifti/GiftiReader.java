@@ -73,36 +73,38 @@ public class GiftiReader extends DefaultHandler {
 	private final byte[] buffer = new byte[BUFFER_SIZE];
 
 
-	
-	
-	/**
-	 * Constructor.
-	 * @param file the file to read
-	 */
-	public GiftiReader(File file) {
-		this(file, new float[] {0, 0, 0}, new float[] {1, 1, 1});
-	}
-	
-	
 
 	/**
 	 * Constructor.
+	 * 
+	 * @param file the file to read
+	 */
+	public GiftiReader(final File file) {
+		this(file, new float[] { 0, 0, 0 }, new float[] { 1, 1, 1 });
+	}
+
+
+
+	/**
+	 * Constructor.
+	 * 
 	 * @param file the file to read
 	 * @param offset offset to be applied to points (float[3])
 	 * @param scale scale to be applied to points (float[3])
 	 */
-	public GiftiReader(File file, float[] offset, float[] scale) {
+	public GiftiReader(final File file, final float[] offset, final float[] scale) {
 		this.file = file;
-		this.base64 = new Base64();
+		base64 = new Base64();
 		this.offset = offset;
 		this.scale = scale;
-		this.tempPoint = new Point3f();
+		tempPoint = new Point3f();
 	}
 
 
 
 	/**
 	 * Read the file.
+	 * 
 	 * @return the GIFTI object
 	 * @throws GiftiFormatException
 	 */
@@ -110,7 +112,7 @@ public class GiftiReader extends DefaultHandler {
 		return parseGiftiXML(false);
 	}
 
-	
+
 
 	/**
 	 * 
@@ -118,42 +120,42 @@ public class GiftiReader extends DefaultHandler {
 	 * @return
 	 * @throws GiftiFormatException
 	 */
-	public GIFTI parseGiftiXML(boolean headerOnly) throws GiftiFormatException {
+	public GIFTI parseGiftiXML(final boolean headerOnly) throws GiftiFormatException {
 		this.headerOnly = headerOnly;
-		SAXParserFactory factory = SAXParserFactory.newInstance();
+		final SAXParserFactory factory = SAXParserFactory.newInstance();
 		factory.setValidating(false);
 
 		SAXParser saxParser;
 		try {
 			saxParser = factory.newSAXParser();
-			InputStream inputStream = new FileInputStream(file);
-			BufferedInputStream bis = new BufferedInputStream(inputStream, BUFFER_SIZE);
-			Reader reader = new InputStreamReader(bis, "UTF-8");
-			InputSource is = new InputSource(reader);
+			final InputStream inputStream = new FileInputStream(file);
+			final BufferedInputStream bis = new BufferedInputStream(inputStream, BUFFER_SIZE);
+			final Reader reader = new InputStreamReader(bis, "UTF-8");
+			final InputSource is = new InputSource(reader);
 			is.setEncoding("UTF-8");
 			saxParser.parse(is, this);
-		} catch (ParserConfigurationException ex) {
+		} catch (final ParserConfigurationException ex) {
 			throw new GiftiFormatException(ex);
-		} catch (SAXException ex) {
+		} catch (final SAXException ex) {
 			throw new GiftiFormatException(ex);
-		} catch (FileNotFoundException ex) {
+		} catch (final FileNotFoundException ex) {
 			throw new GiftiFormatException(ex);
-		} catch (UnsupportedEncodingException ex) {
+		} catch (final UnsupportedEncodingException ex) {
 			throw new GiftiFormatException(ex);
-		} catch (IOException ex) {
+		} catch (final IOException ex) {
 			throw new GiftiFormatException(ex);
 		}
 
 		return gifti;
 	}
-	
 
-	
+
+
 	/**
 	 * @see org.xml.sax.helpers.DefaultHandler#startElement(java.lang.String, java.lang.String, java.lang.String, org.xml.sax.Attributes)
 	 */
 	@Override
-	public void startElement(String uri, String localName, String qName, Attributes attributes) {
+	public void startElement(final String uri, final String localName, final String qName, final Attributes attributes) {
 		if (qName.equalsIgnoreCase(TAG_GIFTI)) {
 			currentMetadataHolder = gifti = new GIFTI(GiftiUtils.attributesToMap(attributes));
 		} else if (qName.equalsIgnoreCase(TAG_DATAARRAY)) {
@@ -195,7 +197,7 @@ public class GiftiReader extends DefaultHandler {
 	 * @see org.xml.sax.helpers.DefaultHandler#characters(char[], int, int)
 	 */
 	@Override
-	public void characters(char ch[], int start, int length) throws SAXException {
+	public void characters(final char ch[], final int start, final int length) throws SAXException {
 		if (isReadingName) {
 			isReadingName = false;
 			currentString.append(ch, start, length);
@@ -213,9 +215,9 @@ public class GiftiReader extends DefaultHandler {
 				if (currentDataArray.isAscii()) {
 					currentString.append(ch, start, length);
 
-					int spaceIndex = currentString.lastIndexOf(" ");
-					int tabIndex = currentString.lastIndexOf("\t");
-					int newlineIndex = currentString.lastIndexOf("\n");
+					final int spaceIndex = currentString.lastIndexOf(" ");
+					final int tabIndex = currentString.lastIndexOf("\t");
+					final int newlineIndex = currentString.lastIndexOf("\n");
 
 					int index = spaceIndex;
 
@@ -227,7 +229,7 @@ public class GiftiReader extends DefaultHandler {
 						index = newlineIndex;
 					}
 
-					String string = currentString.substring(0, index);
+					final String string = currentString.substring(0, index);
 					currentString.delete(0, index);
 
 					if (currentDataArray.isPoints() || currentDataArray.isNormals()) {
@@ -241,8 +243,8 @@ public class GiftiReader extends DefaultHandler {
 
 					currentString.append(str);
 
-					int actualLength = currentString.length();
-					int validLength = (actualLength / 4) * 4;
+					final int actualLength = currentString.length();
+					final int validLength = (actualLength / 4) * 4;
 
 					String string = null;
 
@@ -260,11 +262,11 @@ public class GiftiReader extends DefaultHandler {
 						} else if (currentDataArray.isTriangles()) {
 							handleBinaryIndicesData(string.getBytes("UTF-8"));
 						}
-					} catch (UnsupportedEncodingException ex) {
+					} catch (final UnsupportedEncodingException ex) {
 						throw new SAXException(ex);
-					} catch (DataFormatException ex) {
+					} catch (final DataFormatException ex) {
 						throw new SAXException(ex);
-					} catch (GiftiFormatException ex) {
+					} catch (final GiftiFormatException ex) {
 						throw new SAXException(ex);
 					}
 				}
@@ -278,11 +280,11 @@ public class GiftiReader extends DefaultHandler {
 	 * @see org.xml.sax.helpers.DefaultHandler#endElement(java.lang.String, java.lang.String, java.lang.String)
 	 */
 	@Override
-	public void endElement(String uri, String localName, String qName) throws SAXException {
+	public void endElement(final String uri, final String localName, final String qName) throws SAXException {
 		if (qName.equalsIgnoreCase(TAG_GIFTI)) {
-			
+
 		} else if (qName.equalsIgnoreCase(TAG_DATAARRAY)) {
-			
+
 		} else if (qName.equalsIgnoreCase(TAG_METADATA)) {
 			currentMetadataHolder.addMetadata(metadata);
 		} else if (qName.equalsIgnoreCase(TAG_MD)) {
@@ -305,7 +307,7 @@ public class GiftiReader extends DefaultHandler {
 			isReadingXform = false;
 			try {
 				handleTransform();
-			} catch (GiftiFormatException ex) {
+			} catch (final GiftiFormatException ex) {
 				throw new SAXException(ex);
 			}
 		}
@@ -314,42 +316,43 @@ public class GiftiReader extends DefaultHandler {
 
 
 	private void handleTransform() throws GiftiFormatException {
-		Scanner scanner = new Scanner(currentString.toString());
-		float[][] xform = new float[4][4];
+		try (Scanner scanner = new Scanner(currentString.toString())) {
+			final float[][] xform = new float[4][4];
 
-		for (int ctrOut = 0; ctrOut < 4; ctrOut++) {
-			for (int ctrIn = 0; ctrIn < 4; ctrIn++) {
-				if (scanner.hasNextFloat()) {
-					xform[ctrOut][ctrIn] = scanner.nextFloat();
-				} else {
-					throw new GiftiFormatException("Could not read the coordinate transform matrix!");
+			for (int ctrOut = 0; ctrOut < 4; ctrOut++) {
+				for (int ctrIn = 0; ctrIn < 4; ctrIn++) {
+					if (scanner.hasNextFloat()) {
+						xform[ctrOut][ctrIn] = scanner.nextFloat();
+					} else {
+						throw new GiftiFormatException("Could not read the coordinate transform matrix!");
+					}
 				}
 			}
-		}
 
-		currentTransform.xform = xform;
+			currentTransform.xform = xform;
 
-		if (!GiftiUtils.isIdentity(xform, false)) {
-			currentDataArray.addTransform(currentTransform);
+			if (!GiftiUtils.isIdentity(xform, false)) {
+				currentDataArray.addTransform(currentTransform);
+			}
 		}
 	}
 
 
 
-	private void handleBinaryPointData(byte[] data) throws DataFormatException {
-		ByteBuffer outputBuffer = currentDataArray.getBuffer();
-		boolean isNormals = currentDataArray.isNormals();
-		boolean isByte = currentDataArray.isUnsignedInt8();
-		boolean isFloat = currentDataArray.isFloat32();
-		boolean isInt = currentDataArray.isInt32();
-		boolean swap = !isByte && currentDataArray.isLittleEndian();
-		int numBytes = isByte ? 1 : 4;
+	private void handleBinaryPointData(final byte[] data) throws DataFormatException {
+		final ByteBuffer outputBuffer = currentDataArray.getBuffer();
+		final boolean isNormals = currentDataArray.isNormals();
+		final boolean isByte = currentDataArray.isUnsignedInt8();
+		final boolean isFloat = currentDataArray.isFloat32();
+		final boolean isInt = currentDataArray.isInt32();
+		final boolean swap = !isByte && currentDataArray.isLittleEndian();
+		final int numBytes = isByte ? 1 : 4;
 
 		dataHandler.setData(base64.decode(data));
 
 		while (dataHandler.hasMoreData()) {
-			int bytesRead = dataHandler.readData(buffer, leftOverBytes, buffer.length - leftOverBytes) + leftOverBytes;
-			int validBytes = (bytesRead / numBytes) * numBytes;
+			final int bytesRead = dataHandler.readData(buffer, leftOverBytes, buffer.length - leftOverBytes) + leftOverBytes;
+			final int validBytes = (bytesRead / numBytes) * numBytes;
 
 			for (int ctr = 0; ctr < validBytes; ctr += numBytes) {
 				float value;
@@ -409,12 +412,12 @@ public class GiftiReader extends DefaultHandler {
 
 
 
-	private void handleBinaryIndicesData(byte[] data) throws DataFormatException, GiftiFormatException {
-		ByteBuffer outputBuffer = currentDataArray.getBuffer();
+	private void handleBinaryIndicesData(final byte[] data) throws DataFormatException, GiftiFormatException {
+		final ByteBuffer outputBuffer = currentDataArray.getBuffer();
 
-		boolean isByte = currentDataArray.isUnsignedInt8();
-		boolean isFloat = currentDataArray.isFloat32();
-		boolean swap = !isByte && currentDataArray.isLittleEndian();
+		final boolean isByte = currentDataArray.isUnsignedInt8();
+		final boolean isFloat = currentDataArray.isFloat32();
+		final boolean swap = !isByte && currentDataArray.isLittleEndian();
 
 		if (isFloat) {
 			throw new GiftiFormatException("Indices cannot be float data!");
@@ -423,8 +426,8 @@ public class GiftiReader extends DefaultHandler {
 		dataHandler.setData(base64.decode(data));
 
 		while (dataHandler.hasMoreData()) {
-			int bytesRead = dataHandler.readData(buffer, leftOverBytes, buffer.length - leftOverBytes) + leftOverBytes;
-			int validBytes = (bytesRead / 4) * 4;
+			final int bytesRead = dataHandler.readData(buffer, leftOverBytes, buffer.length - leftOverBytes) + leftOverBytes;
+			final int validBytes = (bytesRead / 4) * 4;
 
 			for (int ctr = 0; ctr < validBytes; ctr += 4) {
 				int value;
@@ -447,13 +450,13 @@ public class GiftiReader extends DefaultHandler {
 
 
 
-	private void handleAsciiPointData(String str) {
-		ByteBuffer outputBuffer = currentDataArray.getBuffer();
-		StringTokenizer scanner = new StringTokenizer(str);
-		boolean isNormals = currentDataArray.isNormals();
+	private void handleAsciiPointData(final String str) {
+		final ByteBuffer outputBuffer = currentDataArray.getBuffer();
+		final StringTokenizer scanner = new StringTokenizer(str);
+		final boolean isNormals = currentDataArray.isNormals();
 
 		while (scanner.hasMoreTokens()) {
-			float value = Float.valueOf(scanner.nextToken());
+			final float value = Float.valueOf(scanner.nextToken());
 
 			if (componentIndex == 0) {
 				tempPoint.x = value;
@@ -486,9 +489,9 @@ public class GiftiReader extends DefaultHandler {
 
 
 
-	private void handleAsciiIndicesData(String str) {
-		ByteBuffer outputBuffer = currentDataArray.getBuffer();
-		StringTokenizer scanner = new StringTokenizer(str);
+	private void handleAsciiIndicesData(final String str) {
+		final ByteBuffer outputBuffer = currentDataArray.getBuffer();
+		final StringTokenizer scanner = new StringTokenizer(str);
 
 		while (scanner.hasMoreTokens()) {
 			outputBuffer.putInt(Integer.valueOf(scanner.nextToken()));
