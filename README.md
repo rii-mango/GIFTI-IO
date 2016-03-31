@@ -23,20 +23,30 @@ Run `build.xml` to produce `build/gifti-io.jar`.
 Usage (Reader)
 ------
 ```Java
-GiftiReader reader = new GiftiReader(file);
-GIFTI gifti = null;
+import edu.uthscsa.ric.visualization.surface.io.formats.gifti.*;
+import java.io.*;
+import java.nio.*;
 
-try {
-    gifti = reader.parseGiftiXML();
-			
-    FloatBuffer points = gifti.getPoints();
-    FloatBuffer normals = gifti.getNormals();
-    IntBuffer indices = gifti.getIndices();
-    
-    // do something with data...
-} catch (GiftiFormatException ex) {
-    // do something with error...
+public class Test {
+	public static void main(String[] args) {
+		GiftiReader reader = new GiftiReader(new File(args[0]));
+		GIFTI gifti = null;
+
+		try {
+		    gifti = reader.parseGiftiXML();
+
+		    FloatBuffer points = gifti.getPoints();
+		    FloatBuffer normals = gifti.getNormals();
+		    IntBuffer indices = gifti.getIndices();
+		    FloatBuffer rgba = gifti.getRGBA();
+
+		    // do something with data...
+		} catch (GiftiFormatException ex) {
+		    // do something with error...
+		}
+	}
 }
+
 ```
 
 Usage (Writer)
