@@ -2,17 +2,8 @@ GIFTI-IO
 ========
 
 A [GIFTI](http://www.nitrc.org/projects/gifti/) reader/writer implementation in Java.  Current list of features:
-- Supports most features common to .surf.gii format, including the intent types: 
-  * NIFTI_INTENT_POINTSET
-  * NIFTI_INTENT_TRIANGLE
-  * NIFTI_INTENT_VECTOR
 - Supports reading ASCII, Base64Binary, GZipBase64Binary data (all datatypes, byte orders).
 - Supports writing GZipBase64Binary data (all datatypes, byte orders).
-
-TODO:
-- External data file support.
-- LabelTabel/Label element support.
-- Support for complete list of intent types.
 
 
 Installation
