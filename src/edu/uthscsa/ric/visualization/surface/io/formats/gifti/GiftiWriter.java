@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 import java.util.zip.Deflater;
@@ -21,8 +22,6 @@ public class GiftiWriter {
 
 	private final GIFTI gifti;
 	private final File file;
-	private final float[] offset;
-	private final float[] scale;
 	private int level;
 	private final boolean lineBreaks;
 
@@ -34,30 +33,26 @@ public class GiftiWriter {
 
 	/**
 	 * Constructor.
-	 * 
+	 *
 	 * @param gifti the GIFTI object to write
 	 * @param file the file to write to
 	 */
 	public GiftiWriter(final GIFTI gifti, final File file) {
-		this(gifti, file, new float[] { 0, 0, 0 }, new float[] { 1, 1, 1 }, false);
+		this(gifti, file, false);
 	}
 
 
 
 	/**
 	 * Constructor.
-	 * 
+	 *
 	 * @param gifti the GIFTI object to write
 	 * @param file the file to write to
-	 * @param offset offset to be applied to points (float[3])
-	 * @param scale scale to be applied to points (float[3])
 	 * @param lineBreaks true to allow line breaks when writing encoded binary data, false otherwise
 	 */
-	public GiftiWriter(final GIFTI gifti, final File file, final float[] offset, final float[] scale, final boolean lineBreaks) {
+	public GiftiWriter(final GIFTI gifti, final File file, final boolean lineBreaks) {
 		this.gifti = gifti;
 		this.file = file;
-		this.offset = offset;
-		this.scale = scale;
 		this.lineBreaks = lineBreaks;
 	}
 
@@ -65,7 +60,7 @@ public class GiftiWriter {
 
 	/**
 	 * Write the file.
-	 * 
+	 *
 	 * @throws GiftiFormatException
 	 */
 	public void writeGiftiXML() throws GiftiFormatException {
@@ -82,7 +77,24 @@ public class GiftiWriter {
 
 			writeMetadata(out, gifti.getMetadata());
 
-			writeEmptyElement(out, GiftiReader.TAG_LABELTABLE);
+			final Map<Integer, Label> labelTable = gifti.getLabelTable();
+			if (labelTable != null) {
+				writeStartElement(out, GiftiReader.TAG_LABELTABLE, null, false);
+
+				for (final Map.Entry<Integer, Label> entry : labelTable.entrySet()) {
+					final Integer key = entry.getKey();
+					final Label label = entry.getValue();
+					final Map<String, String> labelAtts = label.getAttributes();
+					labelAtts.put(Label.ATT_KEY, String.valueOf(key));
+					writeStartElement(out, GiftiReader.TAG_LABEL, labelAtts, Label.ORDER, true);
+					writeCData(out, label.getLabel());
+					writeEndElement(out, true); // GiftiReader.TAG_LABEL
+				}
+
+				writeEndElement(out, false); // GiftiReader.TAG_LABELTABLE
+			} else {
+				writeEmptyElement(out, GiftiReader.TAG_LABELTABLE);
+			}
 
 			if (gifti.getNumDataArrays() > 0) {
 				final Iterator<DataArray> it = gifti.getDataArrays().iterator();
@@ -145,13 +157,20 @@ public class GiftiWriter {
 
 
 	private void writeStartElement(final XMLStreamWriter out, final String tag, final boolean containsData) throws XMLStreamException {
-		writeStartElement(out, tag, null, containsData);
+		writeStartElement(out, tag, null, null, containsData);
 	}
 
 
 
 	private void writeStartElement(final XMLStreamWriter out, final String tag, final Map<String, String> atts, final boolean containsData)
 			throws XMLStreamException {
+		writeStartElement(out, tag, atts, null, containsData);
+	}
+
+
+
+	private void writeStartElement(final XMLStreamWriter out, final String tag, final Map<String, String> atts, final List<String> attOrder,
+			final boolean containsData) throws XMLStreamException {
 		for (int x = 0; x < level; x++) {
 			out.writeCharacters(INDENT);
 		}
@@ -159,12 +178,19 @@ public class GiftiWriter {
 		out.writeStartElement(tag);
 
 		if ((atts != null) && (atts.size() > 0)) {
-			final Iterator<String> it = atts.keySet().iterator();
-			while (it.hasNext()) {
-				final String name = it.next();
-				final String value = atts.get(name);
+			if (attOrder != null) {
+				for (final String name : attOrder) {
+					final String value = atts.get(name);
+					out.writeAttribute(name, value);
+				}
+			} else {
+				final Iterator<String> it = atts.keySet().iterator();
+				while (it.hasNext()) {
+					final String name = it.next();
+					final String value = atts.get(name);
 
-				out.writeAttribute(name, value);
+					out.writeAttribute(name, value);
+				}
 			}
 		}
 
@@ -258,7 +284,7 @@ public class GiftiWriter {
 
 
 	private void writeData(final XMLStreamWriter out, final DataArray dataArray) throws XMLStreamException, UnsupportedEncodingException {
-		final GiftiWriterDataHandler it = new GiftiWriterDataHandler(dataArray, offset, scale);
+		final GiftiWriterDataHandler it = new GiftiWriterDataHandler(dataArray);
 		final Deflater deflater = new Deflater();
 		int leftover = 0;
 		int bufferMark = 0;
@@ -271,6 +297,7 @@ public class GiftiWriter {
 
 		while (it.hasNext()) {
 			final int dataValue = it.next();
+
 			valueCt++;
 			final boolean lastValue = (valueCt == numValues);
 
@@ -286,8 +313,8 @@ public class GiftiWriter {
 				buffer[bufferMark++] = (byte) ((dataValue >> 0) & 0xFF);
 			}
 
-			if (bufferMark == BUFFER_SIZE) {
-				deflater.setInput(buffer);
+			if ((bufferMark == BUFFER_SIZE) || lastValue) {
+				deflater.setInput(buffer, 0, bufferMark);
 
 				if (lastValue) {
 					deflater.finish();
@@ -320,52 +347,6 @@ public class GiftiWriter {
 				}
 
 				bufferMark = 0;
-			}
-		}
-
-		if (bufferMark > 0) {
-			deflater.setInput(buffer, 0, bufferMark);
-			deflater.finish();
-
-			while (!deflater.finished()) {
-				final int numBytesDeflated = deflater.deflate(deflatedBuffer, leftover, deflatedBuffer.length - leftover) + leftover;
-
-				if (numBytesDeflated > 0) {
-					final int numValid = (numBytesDeflated / 3) * 3;
-					leftover = numBytesDeflated % 3;
-
-					final byte[] encoded = GiftiUtils.encode(deflatedBuffer, 0, numValid);
-
-					if (lineBreaks) {
-						currentString = (currentString + new String(encoded, "UTF-8"));
-
-						while (currentString.length() > 76) {
-							out.writeCharacters(currentString.substring(0, 76) + "\r\n");
-							currentString = currentString.substring(76);
-						}
-					} else {
-						out.writeCharacters(new String(encoded, "UTF-8"));
-					}
-
-					if (leftover > 0) {
-						System.arraycopy(deflatedBuffer, numValid, deflatedBuffer, 0, leftover);
-					}
-				}
-			}
-
-			if (leftover > 0) {
-				final byte[] encoded = GiftiUtils.encode(deflatedBuffer, 0, leftover);
-
-				if (lineBreaks) {
-					currentString = (currentString + new String(encoded, "UTF-8"));
-
-					while (currentString.length() > 76) {
-						out.writeCharacters(currentString.substring(0, 76) + "\r\n");
-						currentString = currentString.substring(76);
-					}
-				} else {
-					out.writeCharacters(new String(encoded, "UTF-8"));
-				}
 			}
 		}
 

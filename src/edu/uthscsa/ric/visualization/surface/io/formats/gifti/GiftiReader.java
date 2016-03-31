@@ -15,10 +15,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.StringTokenizer;
+import java.util.TreeMap;
 import java.util.zip.DataFormatException;
 
-import javax.vecmath.Point3f;
-import javax.vecmath.Tuple3f;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -42,18 +41,18 @@ public class GiftiReader extends DefaultHandler {
 	private StringBuffer currentString;
 	private GiftiReaderDataHandler dataHandler;
 	private int leftOverBytes;
-	private int componentIndex;
-	private final float[] offset;
-	private final float[] scale;
 	private final Base64 base64;
-	private final Tuple3f tempPoint;
 	private boolean isReadingName;
 	private boolean isReadingValue;
 	private boolean isReadingData;
 	private boolean isReadingXform;
 	private boolean isReadingTransformedSpace;
 	private boolean isReadingDataSpace;
+	private boolean isReadingLabel;
 	private boolean headerOnly;
+	private Map<Integer, Label> labelTable;
+	private Label currentLabel;
+	private ByteBuffer currentBuffer;
 
 	public static final String TAG_COORDINATESYSTEMTRANSFORMMATRIX = "CoordinateSystemTransformMatrix";
 	public static final String TAG_DATA = "Data";
@@ -76,35 +75,19 @@ public class GiftiReader extends DefaultHandler {
 
 	/**
 	 * Constructor.
-	 * 
+	 *
 	 * @param file the file to read
 	 */
 	public GiftiReader(final File file) {
-		this(file, new float[] { 0, 0, 0 }, new float[] { 1, 1, 1 });
-	}
-
-
-
-	/**
-	 * Constructor.
-	 * 
-	 * @param file the file to read
-	 * @param offset offset to be applied to points (float[3])
-	 * @param scale scale to be applied to points (float[3])
-	 */
-	public GiftiReader(final File file, final float[] offset, final float[] scale) {
 		this.file = file;
 		base64 = new Base64();
-		this.offset = offset;
-		this.scale = scale;
-		tempPoint = new Point3f();
 	}
 
 
 
 	/**
 	 * Read the file.
-	 * 
+	 *
 	 * @return the GIFTI object
 	 * @throws GiftiFormatException
 	 */
@@ -115,7 +98,7 @@ public class GiftiReader extends DefaultHandler {
 
 
 	/**
-	 * 
+	 *
 	 * @param headerOnly
 	 * @return
 	 * @throws GiftiFormatException
@@ -158,8 +141,19 @@ public class GiftiReader extends DefaultHandler {
 	public void startElement(final String uri, final String localName, final String qName, final Attributes attributes) {
 		if (qName.equalsIgnoreCase(TAG_GIFTI)) {
 			currentMetadataHolder = gifti = new GIFTI(GiftiUtils.attributesToMap(attributes));
+		} else if (qName.equalsIgnoreCase(TAG_LABELTABLE)) {
+			labelTable = new TreeMap<Integer, Label>();
+			gifti.setLabelTable(labelTable);
+		} else if (qName.equalsIgnoreCase(TAG_LABEL)) {
+			final Map<String, String> atts = GiftiUtils.attributesToMap(attributes);
+			currentLabel = new Label(Double.parseDouble(atts.get(Label.ATT_RED)), Double.parseDouble(atts.get(Label.ATT_GREEN)),
+					Double.parseDouble(atts.get(Label.ATT_BLUE)), Double.parseDouble(atts.get(Label.ATT_ALPHA)));
+			labelTable.put(Integer.parseInt(atts.get(Label.ATT_KEY)), currentLabel);
+			isReadingLabel = true;
+			currentString = new StringBuffer();
 		} else if (qName.equalsIgnoreCase(TAG_DATAARRAY)) {
 			currentMetadataHolder = currentDataArray = new DataArray(GiftiUtils.attributesToMap(attributes), headerOnly);
+			currentBuffer = currentDataArray.getAsByteBuffer();
 			gifti.addDataArray(currentDataArray);
 		} else if (qName.equalsIgnoreCase(TAG_METADATA)) {
 			metadata = new HashMap<String, String>();
@@ -174,7 +168,6 @@ public class GiftiReader extends DefaultHandler {
 		} else if (qName.equalsIgnoreCase(TAG_DATA)) {
 			isReadingData = true;
 			currentString = new StringBuffer();
-			componentIndex = 0;
 			leftOverBytes = 0;
 			dataHandler = new GiftiReaderDataHandler(currentDataArray.isGzipBase64Binary());
 		} else if (qName.equalsIgnoreCase(TAG_COORDINATESYSTEMTRANSFORMMATRIX)) {
@@ -208,6 +201,8 @@ public class GiftiReader extends DefaultHandler {
 			currentString.append(ch, start, length);
 		} else if (isReadingTransformedSpace) {
 			currentString.append(ch, start, length);
+		} else if (isReadingLabel) {
+			currentString.append(ch, start, length);
 		} else if (isReadingDataSpace) {
 			currentString.append(ch, start, length);
 		} else if (isReadingData) {
@@ -231,12 +226,7 @@ public class GiftiReader extends DefaultHandler {
 
 					final String string = currentString.substring(0, index);
 					currentString.delete(0, index);
-
-					if (currentDataArray.isPoints() || currentDataArray.isNormals()) {
-						handleAsciiPointData(string);
-					} else if (currentDataArray.isTriangles()) {
-						handleAsciiIndicesData(string);
-					}
+					handleAsciiData(string);
 				} else {
 					String str = new String(ch, start, length);
 					str = str.replaceAll("\\s", "");
@@ -257,16 +247,10 @@ public class GiftiReader extends DefaultHandler {
 					}
 
 					try {
-						if (currentDataArray.isPoints() || currentDataArray.isNormals()) {
-							handleBinaryPointData(string.getBytes("UTF-8"));
-						} else if (currentDataArray.isTriangles()) {
-							handleBinaryIndicesData(string.getBytes("UTF-8"));
-						}
+						handleBinaryData(string.getBytes("UTF-8"));
 					} catch (final UnsupportedEncodingException ex) {
 						throw new SAXException(ex);
 					} catch (final DataFormatException ex) {
-						throw new SAXException(ex);
-					} catch (final GiftiFormatException ex) {
 						throw new SAXException(ex);
 					}
 				}
@@ -283,6 +267,9 @@ public class GiftiReader extends DefaultHandler {
 	public void endElement(final String uri, final String localName, final String qName) throws SAXException {
 		if (qName.equalsIgnoreCase(TAG_GIFTI)) {
 
+		} else if (qName.equalsIgnoreCase(TAG_LABEL)) {
+			isReadingLabel = false;
+			currentLabel.setLabel(currentString.toString().trim());
 		} else if (qName.equalsIgnoreCase(TAG_DATAARRAY)) {
 
 		} else if (qName.equalsIgnoreCase(TAG_METADATA)) {
@@ -339,9 +326,7 @@ public class GiftiReader extends DefaultHandler {
 
 
 
-	private void handleBinaryPointData(final byte[] data) throws DataFormatException {
-		final ByteBuffer outputBuffer = currentDataArray.getBuffer();
-		final boolean isNormals = currentDataArray.isNormals();
+	private void handleBinaryData(final byte[] data) throws DataFormatException {
 		final boolean isByte = currentDataArray.isUnsignedInt8();
 		final boolean isFloat = currentDataArray.isFloat32();
 		final boolean isInt = currentDataArray.isInt32();
@@ -355,51 +340,23 @@ public class GiftiReader extends DefaultHandler {
 			final int validBytes = (bytesRead / numBytes) * numBytes;
 
 			for (int ctr = 0; ctr < validBytes; ctr += numBytes) {
-				float value;
-
 				if (swap) {
 					if (isFloat) {
-						value = GiftiUtils.swapFloat(buffer, ctr);
+						currentBuffer.putFloat(GiftiUtils.swapFloat(buffer, ctr));
 					} else if (isInt) {
-						value = GiftiUtils.swapInt(buffer, ctr);
+						currentBuffer.putInt(GiftiUtils.swapInt(buffer, ctr));
 					} else {
-						value = buffer[ctr];
+						currentBuffer.put(buffer[ctr]);
 					}
 				} else {
 					if (isFloat) {
-						value = GiftiUtils.getFloat(buffer, ctr);
+						currentBuffer.putFloat(GiftiUtils.getFloat(buffer, ctr));
 					} else if (isInt) {
-						value = GiftiUtils.getInt(buffer, ctr);
+						currentBuffer.putInt(GiftiUtils.getInt(buffer, ctr));
 					} else {
-						value = buffer[ctr];
+						currentBuffer.put(buffer[ctr]);
 					}
 				}
-
-				if (componentIndex == 0) {
-					tempPoint.x = value;
-				} else if (componentIndex == 1) {
-					tempPoint.y = value;
-				} else if (componentIndex == 2) {
-					tempPoint.z = value;
-					float xVal, yVal, zVal;
-
-					if (isNormals) {
-						xVal = tempPoint.x * scale[0];
-						yVal = tempPoint.y * scale[1];
-						zVal = tempPoint.z * scale[2];
-					} else {
-						xVal = (scale[0] * tempPoint.x) - offset[0];
-						yVal = (scale[1] * tempPoint.y) - offset[1];
-						zVal = (scale[2] * tempPoint.z) - offset[2];
-					}
-
-					outputBuffer.putFloat(xVal);
-					outputBuffer.putFloat(yVal);
-					outputBuffer.putFloat(zVal);
-				}
-
-				componentIndex++;
-				componentIndex %= 3;
 			}
 
 			for (int ctr = validBytes; ctr < bytesRead; ctr++) {
@@ -412,89 +369,11 @@ public class GiftiReader extends DefaultHandler {
 
 
 
-	private void handleBinaryIndicesData(final byte[] data) throws DataFormatException, GiftiFormatException {
-		final ByteBuffer outputBuffer = currentDataArray.getBuffer();
-
-		final boolean isByte = currentDataArray.isUnsignedInt8();
-		final boolean isFloat = currentDataArray.isFloat32();
-		final boolean swap = !isByte && currentDataArray.isLittleEndian();
-
-		if (isFloat) {
-			throw new GiftiFormatException("Indices cannot be float data!");
-		}
-
-		dataHandler.setData(base64.decode(data));
-
-		while (dataHandler.hasMoreData()) {
-			final int bytesRead = dataHandler.readData(buffer, leftOverBytes, buffer.length - leftOverBytes) + leftOverBytes;
-			final int validBytes = (bytesRead / 4) * 4;
-
-			for (int ctr = 0; ctr < validBytes; ctr += 4) {
-				int value;
-				if (swap) {
-					value = GiftiUtils.swapInt(buffer, ctr);
-				} else {
-					value = GiftiUtils.getInt(buffer, ctr);
-				}
-
-				outputBuffer.putInt(value);
-			}
-
-			for (int ctr = validBytes; ctr < bytesRead; ctr++) {
-				buffer[ctr - validBytes] = buffer[ctr];
-			}
-
-			leftOverBytes = bytesRead - validBytes;
-		}
-	}
-
-
-
-	private void handleAsciiPointData(final String str) {
-		final ByteBuffer outputBuffer = currentDataArray.getBuffer();
-		final StringTokenizer scanner = new StringTokenizer(str);
-		final boolean isNormals = currentDataArray.isNormals();
-
-		while (scanner.hasMoreTokens()) {
-			final float value = Float.valueOf(scanner.nextToken());
-
-			if (componentIndex == 0) {
-				tempPoint.x = value;
-			} else if (componentIndex == 1) {
-				tempPoint.y = value;
-			} else if (componentIndex == 2) {
-				tempPoint.z = value;
-
-				float xVal, yVal, zVal;
-
-				if (isNormals) {
-					xVal = tempPoint.x * scale[0];
-					yVal = tempPoint.y * scale[1];
-					zVal = tempPoint.z * scale[2];
-				} else {
-					xVal = (scale[0] * tempPoint.x) - offset[0];
-					yVal = (scale[1] * tempPoint.y) - offset[1];
-					zVal = (scale[2] * tempPoint.z) - offset[2];
-				}
-
-				outputBuffer.putFloat(xVal);
-				outputBuffer.putFloat(yVal);
-				outputBuffer.putFloat(zVal);
-			}
-
-			componentIndex++;
-			componentIndex %= 3;
-		}
-	}
-
-
-
-	private void handleAsciiIndicesData(final String str) {
-		final ByteBuffer outputBuffer = currentDataArray.getBuffer();
+	private void handleAsciiData(final String str) {
 		final StringTokenizer scanner = new StringTokenizer(str);
 
 		while (scanner.hasMoreTokens()) {
-			outputBuffer.putInt(Integer.valueOf(scanner.nextToken()));
+			currentBuffer.putFloat(Float.valueOf(scanner.nextToken()));
 		}
 	}
 }

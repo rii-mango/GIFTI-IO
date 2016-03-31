@@ -15,6 +15,7 @@ public class GIFTI implements MetadataHolder {
 	private final Map<String, String> metadata;
 	private final Map<String, String> attributes;
 	private final Vector<DataArray> dataArrays;
+	private Map<Integer, Label> labelTable;
 
 	public static final String ATT_VERSION = "Version";
 	public static final String ATT_NUMBEROFDATAARRAYS = "NumberOfDataArrays";
@@ -69,7 +70,7 @@ public class GIFTI implements MetadataHolder {
 		int num = 0;
 		try {
 			num = Integer.parseInt(attributes.get(ATT_NUMBEROFDATAARRAYS));
-		} catch (NumberFormatException ex) {}
+		} catch (final NumberFormatException ex) {}
 		return num;
 	}
 
@@ -88,11 +89,11 @@ public class GIFTI implements MetadataHolder {
 	 * @return
 	 */
 	public FloatBuffer getPoints() {
-		Iterator<DataArray> it = dataArrays.iterator();
+		final Iterator<DataArray> it = dataArrays.iterator();
 		while (it.hasNext()) {
-			DataArray dataArray = it.next();
+			final DataArray dataArray = it.next();
 			if (dataArray.isPoints()) {
-				return dataArray.getAsPointsBuffer();
+				return dataArray.getAsFloatBuffer();
 			}
 		}
 
@@ -100,15 +101,32 @@ public class GIFTI implements MetadataHolder {
 	}
 
 
-	
+
 	/**
-	 * 
+	 * @return
+	 */
+	public FloatBuffer getRGBA() {
+		final Iterator<DataArray> it = dataArrays.iterator();
+		while (it.hasNext()) {
+			final DataArray dataArray = it.next();
+			if (dataArray.isRGBA()) {
+				return dataArray.getAsFloatBuffer();
+			}
+		}
+
+		return null;
+	}
+
+
+
+	/**
+	 *
 	 * @return
 	 */
 	public int getNumPoints() {
-		Iterator<DataArray> it = dataArrays.iterator();
+		final Iterator<DataArray> it = dataArrays.iterator();
 		while (it.hasNext()) {
-			DataArray dataArray = it.next();
+			final DataArray dataArray = it.next();
 			if (dataArray.isPoints()) {
 				return dataArray.getNumElements();
 			}
@@ -116,18 +134,18 @@ public class GIFTI implements MetadataHolder {
 
 		return 0;
 	}
-	
-	
+
+
 
 	/**
 	 * @return
 	 */
 	public FloatBuffer getNormals() {
-		Iterator<DataArray> it = dataArrays.iterator();
+		final Iterator<DataArray> it = dataArrays.iterator();
 		while (it.hasNext()) {
-			DataArray dataArray = it.next();
+			final DataArray dataArray = it.next();
 			if (dataArray.isNormals()) {
-				return dataArray.getAsNormalsBuffer();
+				return dataArray.getAsFloatBuffer();
 			}
 		}
 
@@ -140,11 +158,11 @@ public class GIFTI implements MetadataHolder {
 	 * @return
 	 */
 	public IntBuffer getIndices() {
-		Iterator<DataArray> it = dataArrays.iterator();
+		final Iterator<DataArray> it = dataArrays.iterator();
 		while (it.hasNext()) {
-			DataArray dataArray = it.next();
-			if (dataArray.isTriangles()) {
-				return dataArray.getAsIndicesBuffer();
+			final DataArray dataArray = it.next();
+			if (dataArray.isIndices()) {
+				return dataArray.getAsIntBuffer();
 			}
 		}
 
@@ -152,35 +170,35 @@ public class GIFTI implements MetadataHolder {
 	}
 
 
-	
+
 	/**
-	 * 
+	 *
 	 * @return
 	 */
 	public int getNumTriangles() {
-		Iterator<DataArray> it = dataArrays.iterator();
+		final Iterator<DataArray> it = dataArrays.iterator();
 		while (it.hasNext()) {
-			DataArray dataArray = it.next();
-			if (dataArray.isTriangles()) {
+			final DataArray dataArray = it.next();
+			if (dataArray.isIndices()) {
 				return dataArray.getNumElements() / 3;
 			}
 		}
 
 		return 0;
 	}
-	
-	
+
+
 
 	/**
 	 * @return
 	 */
 	public String getDescription() {
-		StringBuffer sb = new StringBuffer();
+		final StringBuffer sb = new StringBuffer();
 
-		Set<String> keys = metadata.keySet();
-		Iterator<String> it = keys.iterator();
+		final Set<String> keys = metadata.keySet();
+		final Iterator<String> it = keys.iterator();
 		while (it.hasNext()) {
-			String key = it.next();
+			final String key = it.next();
 			sb.append("  " + key + " = " + metadata.get(key) + "\n");
 		}
 
@@ -203,5 +221,25 @@ public class GIFTI implements MetadataHolder {
 	 */
 	public Vector<DataArray> getDataArrays() {
 		return dataArrays;
+	}
+
+
+
+	/**
+	 *
+	 * @return
+	 */
+	public Map<Integer, Label> getLabelTable() {
+		return labelTable;
+	}
+
+
+
+	/**
+	 *
+	 * @param labelTable
+	 */
+	public void setLabelTable(Map<Integer, Label> labelTable) {
+		this.labelTable = labelTable;
 	}
 }

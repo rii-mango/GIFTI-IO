@@ -1,6 +1,7 @@
 
 package edu.uthscsa.ric.visualization.surface.io.formats.gifti;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -12,12 +13,10 @@ import java.util.Vector;
 
 public class DataArray implements MetadataHolder {
 
-	private final Map<String, String> metadata;
 	private final Map<String, String> attributes;
+	private Buffer buffer;
+	private final Map<String, String> metadata;
 	private final Vector<GiftiTransform> transforms;
-	private ByteBuffer buffer;
-	private FloatBuffer floatBuffer;
-	private IntBuffer intBuffer;
 
 	public static final String ATT_ARRAYINDEXINGORDER = "ArrayIndexingOrder";
 	public static final String ATT_DATATYPE = "DataType";
@@ -29,32 +28,32 @@ public class DataArray implements MetadataHolder {
 	public static final String ATT_EXTERNALFILEOFFSET = "ExternalFileOffset";
 	public static final String ATT_INTENT = "Intent";
 
-	public static final String DIM_ORDER_ROWMAJORORDER = "RowMajorOrder";
-	public static final String DIM_ORDER_COLUMNMAJORORDER = "ColumnMajorOrder";
-
-	public static final String TYPE_NIFTI_TYPE_UINT8 = "NIFTI_TYPE_UINT8";
-	public static final String TYPE_NIFTI_TYPE_INT32 = "NIFTI_TYPE_INT32";
-	public static final String TYPE_NIFTI_TYPE_FLOAT32 = "NIFTI_TYPE_FLOAT32";
-
-	public static final String ENCODING_ASCII = "ASCII";
-	public static final String ENCODING_BASE64BINARY = "Base64Binary";
-	public static final String ENCODING_GZIPBASE64BINARY = "GZipBase64Binary";
-	public static final String ENCODING_EXTERNALFILEBINARY = "ExternalFileBinary";
-
 	public static final String DATA_ORDER_BIGENDIAN = "BigEndian";
 	public static final String DATA_ORDER_LITTLEENDIAN = "LittleEndian";
 
+	public static final String DIM_ORDER_COLUMNMAJORORDER = "ColumnMajorOrder";
+	public static final String DIM_ORDER_ROWMAJORORDER = "RowMajorOrder";
+	public static final String ENCODING_ASCII = "ASCII";
+
+	public static final String ENCODING_BASE64BINARY = "Base64Binary";
+	public static final String ENCODING_EXTERNALFILEBINARY = "ExternalFileBinary";
+	public static final String ENCODING_GZIPBASE64BINARY = "GZipBase64Binary";
 	public static final String NIFTI_INTENT_GENMATRIX = "NIFTI_INTENT_GENMATRIX";
+
 	public static final String NIFTI_INTENT_LABEL = "NIFTI_INTENT_LABEL";
 	public static final String NIFTI_INTENT_NODE_INDEX = "NIFTI_INTENT_NODE_INDEX";
+
+	public static final String NIFTI_INTENT_NONE = "NIFTI_INTENT_NONE";
 	public static final String NIFTI_INTENT_POINTSET = "NIFTI_INTENT_POINTSET";
 	public static final String NIFTI_INTENT_RGB_VECTOR = "NIFTI_INTENT_RGB_VECTOR";
 	public static final String NIFTI_INTENT_RGBA_VECTOR = "NIFTI_INTENT_RGBA_VECTOR";
 	public static final String NIFTI_INTENT_SHAPE = "NIFTI_INTENT_SHAPE";
 	public static final String NIFTI_INTENT_TIME_SERIES = "NIFTI_INTENT_TIME_SERIES";
 	public static final String NIFTI_INTENT_TRIANGLE = "NIFTI_INTENT_TRIANGLE";
-	public static final String NIFTI_INTENT_NONE = "NIFTI_INTENT_NONE";
 	public static final String NIFTI_INTENT_VECTOR = "NIFTI_INTENT_VECTOR";
+	public static final String TYPE_NIFTI_TYPE_FLOAT32 = "NIFTI_TYPE_FLOAT32";
+	public static final String TYPE_NIFTI_TYPE_INT32 = "NIFTI_TYPE_INT32";
+	public static final String TYPE_NIFTI_TYPE_UINT8 = "NIFTI_TYPE_UINT8";
 
 
 
@@ -67,15 +66,9 @@ public class DataArray implements MetadataHolder {
 		transforms = new Vector<GiftiTransform>();
 
 		if (!headerOnly) {
-			if (isFloat32()) {
-				buffer = ByteBuffer.allocateDirect(getNumElements() * 4 * 3);
-				buffer.order(ByteOrder.nativeOrder());
-			} else if (isInt32()) {
-				buffer = ByteBuffer.allocateDirect(getNumElements() * 4 * 3);
-				buffer.order(ByteOrder.nativeOrder());
-			} else if (isUnsignedInt8()) {
-				buffer = ByteBuffer.allocateDirect(getNumElements() * 3);
-			}
+			final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(getDimensionality() * getBytesPerUnit());
+			byteBuffer.order(ByteOrder.nativeOrder());
+			buffer = byteBuffer;
 		}
 	}
 
@@ -83,26 +76,13 @@ public class DataArray implements MetadataHolder {
 
 	/**
 	 * @param attributes
-	 * @param floatIterator
+	 * @param buffer
 	 */
-	public DataArray(final Map<String, String> attributes, final FloatBuffer buffer) {
+	public DataArray(final Map<String, String> attributes, final Buffer buffer) {
 		this.attributes = attributes;
 		metadata = new HashMap<String, String>();
 		transforms = new Vector<GiftiTransform>();
-		floatBuffer = buffer;
-	}
-
-
-
-	/**
-	 * @param attributes
-	 * @param indexIterator
-	 */
-	public DataArray(final Map<String, String> attributes, final IntBuffer buffer) {
-		this.attributes = attributes;
-		metadata = new HashMap<String, String>();
-		transforms = new Vector<GiftiTransform>();
-		intBuffer = buffer;
+		this.buffer = buffer;
 	}
 
 
@@ -127,10 +107,40 @@ public class DataArray implements MetadataHolder {
 
 
 	/**
+	 *
 	 * @return
 	 */
-	public int getNumTransforms() {
-		return transforms.size();
+	public FloatBuffer getAsFloatBuffer() {
+		if (buffer != null) {
+			buffer.rewind();
+
+			if (buffer instanceof FloatBuffer) {
+				return (FloatBuffer) buffer;
+			} else if (buffer instanceof ByteBuffer) {
+				return ((ByteBuffer) buffer).asFloatBuffer();
+			}
+		}
+
+		return null;
+	}
+
+
+
+	/**
+	 *
+	 * @return
+	 */
+	public IntBuffer getAsIntBuffer() {
+		if (buffer != null) {
+			buffer.rewind();
+			if (buffer instanceof IntBuffer) {
+				return (IntBuffer) buffer;
+			} else if (buffer instanceof ByteBuffer) {
+				return ((ByteBuffer) buffer).asIntBuffer();
+			}
+		}
+
+		return null;
 	}
 
 
@@ -138,8 +148,16 @@ public class DataArray implements MetadataHolder {
 	/**
 	 * @return
 	 */
-	public Vector<GiftiTransform> getTransforms() {
-		return transforms;
+	public ByteBuffer getAsByteBuffer() {
+		if (buffer != null) {
+			buffer.rewind();
+
+			if (buffer instanceof ByteBuffer) {
+				return (ByteBuffer) buffer;
+			}
+		}
+
+		return null;
 	}
 
 
@@ -147,8 +165,8 @@ public class DataArray implements MetadataHolder {
 	/**
 	 * @return
 	 */
-	public boolean isLittleEndian() {
-		return DATA_ORDER_LITTLEENDIAN.equals(attributes.get(ATT_ENDIAN));
+	public Map<String, String> getAttributes() {
+		return attributes;
 	}
 
 
@@ -156,8 +174,41 @@ public class DataArray implements MetadataHolder {
 	/**
 	 * @return
 	 */
-	public boolean isRowMajorOrder() {
-		return !DIM_ORDER_COLUMNMAJORORDER.equals(attributes.get(ATT_ARRAYINDEXINGORDER));
+	public Buffer getBuffer() {
+		return buffer;
+	}
+
+
+
+	/**
+	 *
+	 * @return
+	 */
+	public final int getBytesPerUnit() {
+		if (isFloat32()) {
+			return 4;
+		} else if (isInt32()) {
+			return 4;
+		} else if (isUnsignedInt8()) {
+			return 1;
+		}
+
+		return 0;
+	}
+
+
+
+	/**
+	 *
+	 * @return
+	 */
+	public final int getDimensionality() {
+		int total = 1;
+		for (int ctr = 0; ctr < getDimensions(); ctr++) {
+			total *= getNumElements(ctr);
+		}
+
+		return total;
 	}
 
 
@@ -165,198 +216,12 @@ public class DataArray implements MetadataHolder {
 	/**
 	 * @return
 	 */
-	public boolean isPoints() {
-		return NIFTI_INTENT_POINTSET.equals(attributes.get(ATT_INTENT));
-	}
-
-
-
-	/**
-	 * @return
-	 */
-	public boolean isTriangles() {
-		return NIFTI_INTENT_TRIANGLE.equals(attributes.get(ATT_INTENT));
-	}
-
-
-
-	/**
-	 * @return
-	 */
-	public boolean isNormals() {
-		return NIFTI_INTENT_VECTOR.equals(attributes.get(ATT_INTENT));
-	}
-
-
-
-	/**
-	 * @return
-	 */
-	public boolean isRGB() {
-		return NIFTI_INTENT_RGB_VECTOR.equals(attributes.get(ATT_INTENT));
-	}
-
-
-
-	/**
-	 * @return
-	 */
-	public boolean isRGBA() {
-		return NIFTI_INTENT_RGBA_VECTOR.equals(attributes.get(ATT_INTENT));
-	}
-
-
-
-	/**
-	 * @return
-	 */
-	public final boolean isFloat32() {
-		return TYPE_NIFTI_TYPE_FLOAT32.equals(attributes.get(ATT_DATATYPE));
-	}
-
-
-
-	/**
-	 * @return
-	 */
-	public final boolean isInt32() {
-		return TYPE_NIFTI_TYPE_INT32.equals(attributes.get(ATT_DATATYPE));
-	}
-
-
-
-	/**
-	 * @return
-	 */
-	public final boolean isUnsignedInt8() {
-		return TYPE_NIFTI_TYPE_UINT8.equals(attributes.get(ATT_DATATYPE));
-	}
-
-
-
-	/**
-	 * @return
-	 */
-	public int getDimensions() {
+	public final int getDimensions() {
 		int dims = 0;
 		try {
 			dims = Integer.parseInt(attributes.get(ATT_DIMENSIONALITY));
 		} catch (final NumberFormatException ex) {}
 		return dims;
-	}
-
-
-
-	/**
-	 * @return
-	 */
-	public boolean isScalar() {
-		return (getDimensions() == 1);
-	}
-
-
-
-	/**
-	 * @return
-	 */
-	public boolean isTriple() {
-		return ((getDimensions() == 2) && (getNumElements(1) == 3));
-	}
-
-
-
-	/**
-	 * @return
-	 */
-	public boolean isQuadruple() {
-		return ((getDimensions() == 2) && (getNumElements(1) == 4));
-	}
-
-
-
-	/**
-	 * @return
-	 */
-	public int getNumValues() {
-		if (getDimensions() <= 2) {
-			if (isScalar()) {
-				return getNumElements();
-			} else if (isTriple()) {
-				return getNumElements() * 3;
-			} else if (isQuadruple()) {
-				return getNumElements() * 4;
-			}
-		}
-
-		return -1;
-	}
-
-
-
-	/**
-	 * @return
-	 */
-	public final int getNumElements() {
-		return getNumElements(0);
-	}
-
-
-
-	/**
-	 * @param dim
-	 * @return
-	 */
-	public int getNumElements(final int dim) {
-		int num = 0;
-		try {
-			num = Integer.parseInt(attributes.get(ATT_DIMN + dim));
-		} catch (final NumberFormatException ex) {}
-		return num;
-	}
-
-
-
-	/**
-	 * @return
-	 */
-	public boolean isAscii() {
-		return ENCODING_ASCII.equals(attributes.get(ATT_ENCODING));
-	}
-
-
-
-	/**
-	 * @return
-	 */
-	public boolean isBase64Binary() {
-		return ENCODING_BASE64BINARY.equals(attributes.get(ATT_ENCODING));
-	}
-
-
-
-	/**
-	 * @return
-	 */
-	public boolean isGzipBase64Binary() {
-		return ENCODING_GZIPBASE64BINARY.equals(attributes.get(ATT_ENCODING));
-	}
-
-
-
-	/**
-	 * @return
-	 */
-	public boolean isBase64Encoded() {
-		return isBase64Binary() || isGzipBase64Binary();
-	}
-
-
-
-	/**
-	 * @return
-	 */
-	public boolean isExternalFileBinary() {
-		return ENCODING_EXTERNALFILEBINARY.equals(attributes.get(ATT_ENCODING));
 	}
 
 
@@ -395,8 +260,22 @@ public class DataArray implements MetadataHolder {
 	/**
 	 * @return
 	 */
-	public ByteBuffer getBuffer() {
-		return buffer;
+	public final int getNumElements() {
+		return getNumElements(0);
+	}
+
+
+
+	/**
+	 * @param dim
+	 * @return
+	 */
+	public int getNumElements(final int dim) {
+		int num = 0;
+		try {
+			num = Integer.parseInt(attributes.get(ATT_DIMN + dim));
+		} catch (final NumberFormatException ex) {}
+		return num;
 	}
 
 
@@ -404,13 +283,27 @@ public class DataArray implements MetadataHolder {
 	/**
 	 * @return
 	 */
-	public FloatBuffer getAsPointsBuffer() {
-		if (buffer != null) {
-			buffer.rewind();
-			return buffer.asFloatBuffer();
+	public int getNumTransforms() {
+		return transforms.size();
+	}
+
+
+
+	/**
+	 * @return
+	 */
+	public int getNumValues() {
+		if (getDimensions() <= 2) {
+			if (isScalar()) {
+				return getNumElements();
+			} else if (isTriple()) {
+				return getNumElements() * 3;
+			} else if (isQuadruple()) {
+				return getNumElements() * 4;
+			}
 		}
 
-		return null;
+		return -1;
 	}
 
 
@@ -418,13 +311,8 @@ public class DataArray implements MetadataHolder {
 	/**
 	 * @return
 	 */
-	public FloatBuffer getAsNormalsBuffer() {
-		if (buffer != null) {
-			buffer.rewind();
-			return buffer.asFloatBuffer();
-		}
-
-		return null;
+	public Vector<GiftiTransform> getTransforms() {
+		return transforms;
 	}
 
 
@@ -432,13 +320,8 @@ public class DataArray implements MetadataHolder {
 	/**
 	 * @return
 	 */
-	public IntBuffer getAsIndicesBuffer() {
-		if (buffer != null) {
-			buffer.rewind();
-			return buffer.asIntBuffer();
-		}
-
-		return null;
+	public boolean isAscii() {
+		return ENCODING_ASCII.equals(attributes.get(ATT_ENCODING));
 	}
 
 
@@ -446,8 +329,8 @@ public class DataArray implements MetadataHolder {
 	/**
 	 * @return
 	 */
-	public Map<String, String> getAttributes() {
-		return attributes;
+	public boolean isBase64Binary() {
+		return ENCODING_BASE64BINARY.equals(attributes.get(ATT_ENCODING));
 	}
 
 
@@ -455,8 +338,8 @@ public class DataArray implements MetadataHolder {
 	/**
 	 * @return
 	 */
-	public FloatBuffer getFloatBuffer() {
-		return floatBuffer;
+	public boolean isBase64Encoded() {
+		return isBase64Binary() || isGzipBase64Binary();
 	}
 
 
@@ -464,7 +347,142 @@ public class DataArray implements MetadataHolder {
 	/**
 	 * @return
 	 */
-	public IntBuffer getIntBuffer() {
-		return intBuffer;
+	public boolean isExternalFileBinary() {
+		return ENCODING_EXTERNALFILEBINARY.equals(attributes.get(ATT_ENCODING));
+	}
+
+
+
+	/**
+	 * @return
+	 */
+	public final boolean isFloat32() {
+		return TYPE_NIFTI_TYPE_FLOAT32.equals(attributes.get(ATT_DATATYPE));
+	}
+
+
+
+	/**
+	 * @return
+	 */
+	public boolean isGzipBase64Binary() {
+		return ENCODING_GZIPBASE64BINARY.equals(attributes.get(ATT_ENCODING));
+	}
+
+
+
+	/**
+	 * @return
+	 */
+	public final boolean isInt32() {
+		return TYPE_NIFTI_TYPE_INT32.equals(attributes.get(ATT_DATATYPE));
+	}
+
+
+
+	/**
+	 * @return
+	 */
+	public final boolean isLabels() {
+		return NIFTI_INTENT_LABEL.equals(attributes.get(ATT_INTENT));
+	}
+
+
+
+	/**
+	 * @return
+	 */
+	public boolean isLittleEndian() {
+		return DATA_ORDER_LITTLEENDIAN.equals(attributes.get(ATT_ENDIAN));
+	}
+
+
+
+	/**
+	 * @return
+	 */
+	public boolean isNormals() {
+		return NIFTI_INTENT_VECTOR.equals(attributes.get(ATT_INTENT));
+	}
+
+
+
+	/**
+	 * @return
+	 */
+	public boolean isPoints() {
+		return NIFTI_INTENT_POINTSET.equals(attributes.get(ATT_INTENT));
+	}
+
+
+
+	/**
+	 * @return
+	 */
+	public boolean isQuadruple() {
+		return ((getDimensions() == 2) && (getNumElements(1) == 4));
+	}
+
+
+
+	/**
+	 * @return
+	 */
+	public boolean isRGB() {
+		return NIFTI_INTENT_RGB_VECTOR.equals(attributes.get(ATT_INTENT));
+	}
+
+
+
+	/**
+	 * @return
+	 */
+	public boolean isRGBA() {
+		return NIFTI_INTENT_RGBA_VECTOR.equals(attributes.get(ATT_INTENT));
+	}
+
+
+
+	/**
+	 * @return
+	 */
+	public boolean isRowMajorOrder() {
+		return !DIM_ORDER_COLUMNMAJORORDER.equals(attributes.get(ATT_ARRAYINDEXINGORDER));
+	}
+
+
+
+	/**
+	 * @return
+	 */
+	public boolean isScalar() {
+		return (getDimensions() == 1);
+	}
+
+
+
+	/**
+	 * @return
+	 */
+	public boolean isIndices() {
+		return NIFTI_INTENT_TRIANGLE.equals(attributes.get(ATT_INTENT));
+	}
+
+
+
+	/**
+	 * @return
+	 */
+	public boolean isTriple() {
+		return ((getDimensions() == 2) && (getNumElements(1) == 3));
+	}
+
+
+
+	/**
+	 * @return
+	 */
+	public final boolean isUnsignedInt8() {
+		return TYPE_NIFTI_TYPE_UINT8.equals(attributes.get(ATT_DATATYPE));
 	}
 }
