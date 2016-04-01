@@ -313,8 +313,8 @@ public class GiftiWriter {
 				buffer[bufferMark++] = (byte) ((dataValue >> 0) & 0xFF);
 			}
 
-			if ((bufferMark == BUFFER_SIZE) || lastValue) {
-				deflater.setInput(buffer, 0, bufferMark);
+			if (bufferMark == BUFFER_SIZE) {
+				deflater.setInput(buffer);
 
 				if (lastValue) {
 					deflater.finish();
@@ -347,6 +347,52 @@ public class GiftiWriter {
 				}
 
 				bufferMark = 0;
+			}
+		}
+
+		if (bufferMark > 0) {
+			deflater.setInput(buffer, 0, bufferMark);
+			deflater.finish();
+
+			while (!deflater.finished()) {
+				final int numBytesDeflated = deflater.deflate(deflatedBuffer, leftover, deflatedBuffer.length - leftover) + leftover;
+
+				if (numBytesDeflated > 0) {
+					final int numValid = (numBytesDeflated / 3) * 3;
+					leftover = numBytesDeflated % 3;
+
+					final byte[] encoded = GiftiUtils.encode(deflatedBuffer, 0, numValid);
+
+					if (lineBreaks) {
+						currentString = (currentString + new String(encoded, "UTF-8"));
+
+						while (currentString.length() > 76) {
+							out.writeCharacters(currentString.substring(0, 76) + "\r\n");
+							currentString = currentString.substring(76);
+						}
+					} else {
+						out.writeCharacters(new String(encoded, "UTF-8"));
+					}
+
+					if (leftover > 0) {
+						System.arraycopy(deflatedBuffer, numValid, deflatedBuffer, 0, leftover);
+					}
+				}
+			}
+
+			if (leftover > 0) {
+				final byte[] encoded = GiftiUtils.encode(deflatedBuffer, 0, leftover);
+
+				if (lineBreaks) {
+					currentString = (currentString + new String(encoded, "UTF-8"));
+
+					while (currentString.length() > 76) {
+						out.writeCharacters(currentString.substring(0, 76) + "\r\n");
+						currentString = currentString.substring(76);
+					}
+				} else {
+					out.writeCharacters(new String(encoded, "UTF-8"));
+				}
 			}
 		}
 
